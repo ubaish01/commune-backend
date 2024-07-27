@@ -91,7 +91,7 @@ io.on(EVENT.CONNECTION, async (socket) => {
     };
   });
 
-  socket.on(EVENT.JOIN_ROOM, async ({ roomName }, callback) => {
+  socket.on(EVENT.JOIN_ROOM, async ({ roomName, name }, callback) => {
     const router1 = await createRoom(roomName, socket.id);
 
     peers[socket.id] = {
@@ -101,7 +101,7 @@ io.on(EVENT.CONNECTION, async (socket) => {
       producers: [],
       consumers: [],
       peerDetails: {
-        name: "",
+        name: name || "unknown",
         isAdmin: false,
       },
     };
@@ -166,8 +166,11 @@ io.on(EVENT.CONNECTION, async (socket) => {
     ];
   };
 
-  const addProducer = (producer, roomName) => {
-    producers = [...producers, { socketId: socket.id, producer, roomName }];
+  const addProducer = (producer, roomName, peerDetails) => {
+    producers = [
+      ...producers,
+      { socketId: socket.id, producer, roomName, peerDetails },
+    ];
 
     peers[socket.id].producers = [...peers[socket.id].producers, producer.id];
   };
@@ -183,31 +186,28 @@ io.on(EVENT.CONNECTION, async (socket) => {
     const { roomName } = peers[socket.id];
 
     let producerList = [];
-    // debuging
-    console.log("PRODUCERS : ", producers.length);
-    console.log(
-      "******************************************************************************************************"
-    );
-    producers.forEach((producerData, index) => {
-      console.log(`Producer = ${producerData.socketId} , mine = ${socket.id}`);
 
+    console.log("___________Peoplee in the room_____________________");
+    producers.forEach((producerData, index) => {
+      console.log(index + 1 + ". " + producerData.peerDetails.name);
       if (
         producerData.socketId !== socket.id &&
         producerData.roomName === roomName
       ) {
-        producerList = [...producerList, producerData.producer.id];
+        producerList = [
+          ...producerList,
+          {
+            producerID: producerData.producer.id,
+            name: producerData.peerDetails.name,
+          },
+        ];
       }
     });
-    console.log(
-      "******************************************************************************************************"
-    );
-    // debuging
-    console.log(producerList.map((p) => p));
 
     callback(producerList);
   });
 
-  const informConsumers = (roomName, socketId, id) => {
+  const informConsumers = (roomName, socketId, id, peerDetails) => {
     console.log(`just joined, id ${id} ${roomName}, ${socketId}`);
     producers.forEach((producerData) => {
       if (
@@ -215,7 +215,10 @@ io.on(EVENT.CONNECTION, async (socket) => {
         producerData.roomName === roomName
       ) {
         const producerSocket = peers[producerData.socketId].socket;
-        producerSocket.emit("new-producer", { producerId: id });
+        producerSocket.emit(EVENT.NEW_PRODUCER, {
+          producerID: id,
+          name: peerDetails.name,
+        });
       }
     });
   };
@@ -240,13 +243,11 @@ io.on(EVENT.CONNECTION, async (socket) => {
         rtpParameters,
       });
 
-      const { roomName } = peers[socket.id];
-      console.log(
-        "------------------------------ADDING PRODUVER--------------------------------"
-      );
-      addProducer(producer, roomName);
+      const { roomName, peerDetails } = peers[socket.id];
 
-      informConsumers(roomName, socket.id, producer.id);
+      addProducer(producer, roomName, peerDetails);
+
+      informConsumers(roomName, socket.id, producer.id, peerDetails);
 
       console.log("Producer ID: ", producer.id, producer.kind);
 
