@@ -1,0 +1,17 @@
+{
+  "name": "commune",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "author": "ubaish malik",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mediasoup": "^3.14.9",
+    "socket.io": "^4.7.5"
+  }
+}
