@@ -13,6 +13,7 @@ app.use("/api/v1", v1);
 
 app.get("/", (req, res) => {
   return res.json({
+    success: true,
     message: "Yes sirrr! Its working fineee!",
     announced_ip: process.env.ANNOUNCED_IP,
   });
